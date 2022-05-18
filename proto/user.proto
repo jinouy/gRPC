@@ -1,0 +1,86 @@
+syntax = "proto3";
+
+package proto;
+option go_package = "../proto";
+
+service UserService{
+  // 获取单个用户信息
+  rpc GetUserByName(UserGetReq) returns (UserGetResp);
+  // 获取所有用户信息，分页查找
+  rpc GetUsers(UsersGetReq) returns(UsersGetResp);
+  // 添加用户信息
+  rpc AddUser(UserPostReq) returns(UserPostResp);
+  // 更新用户名字
+  rpc UpdUserName(UserPutReq) returns(UserPutResp);
+  // 删除用户
+  rpc DelUser(UserDelReq) returns(UserDelResp);
+}
+
+message User{
+  int64 id = 1;
+  string created_at = 2;
+  string updated_at = 3;
+  string name = 4;
+}
+// 查询一条
+message UserGetReq{
+  string name = 1;
+}
+
+// 返回查询一条的结果
+message UserGetResp{
+  User user = 1;
+  int32 code = 2;
+  string msg = 3;
+}
+// 更新名字
+message UserPutReq{
+  string old_name = 1;
+  string new_name = 2;
+}
+
+// 返回更新名字的结果
+message UserPutResp{
+  User user = 1;
+  int32 code = 2;
+  string msg = 3;
+}
+
+// 查询所有
+message UsersGetReq{
+  int32 page = 1;
+  int32 limit = 2;
+}
+
+// 返回查询所有的结果
+message UsersGetResp{
+  repeated User user = 1;
+  int32 code = 2;
+  string msg = 3;
+}
+
+// 添加用户
+message UserPostReq{
+  string name = 1;
+}
+
+// 返回添加用户的结果
+message UserPostResp{
+  User user = 1;
+  int32 code = 2;
+  string msg = 3;
+}
+
+// 删除用户
+message UserDelReq{
+  string name = 1;
+}
+
+// 返回删除的结果
+message UserDelResp{
+  User user = 1;
+  int32 code = 2;
+  string msg = 3;
+}
+
+
