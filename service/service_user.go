@@ -5,8 +5,8 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"gRPC_User/proto"
-	"gRPC_User/service"
+	"gRPC_User/controller"
+	"gRPC_User/proto/user"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
@@ -15,7 +15,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net"
-	"os"
 )
 
 func main() {
@@ -62,10 +61,10 @@ func main() {
 
 	rpcServer := grpc.NewServer(grpc.Creds(creds), grpc.UnaryInterceptor(authInterceptor))
 
-	src := &service.UserService{}
-	proto.RegisterUserServiceServer(rpcServer, src)
+	src := &controller.UserService{}
+	user.RegisterUserServiceServer(rpcServer, src)
 
-	listener, err := net.Listen("tcp", GetListen())
+	listener, err := net.Listen("tcp", ":8084")
 	if err != nil {
 		panic(err)
 	}
@@ -96,11 +95,4 @@ func Auth(ctx context.Context) error {
 		return status.Errorf(codes.Unauthenticated, "token不合法")
 	}
 	return nil
-}
-
-func GetListen() string {
-	if len(os.Args) < 2 {
-		return ":8084"
-	}
-	return os.Args[1]
 }

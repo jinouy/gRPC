@@ -1,10 +1,10 @@
-package service
+package controller
 
 import (
 	"context"
 	"gRPC_User/helper"
 	"gRPC_User/model"
-	"gRPC_User/proto"
+	user2 "gRPC_User/proto/user"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
@@ -33,14 +33,14 @@ func TestProductService_GetUserByName(t *testing.T) {
 	conn, err := grpc.Dial(":8084", grpc.WithTransportCredentials(helper.GetClientCred()), grpc.WithPerRPCCredentials(user))
 	require.NoError(t, err)
 
-	c := proto.NewUserServiceClient(conn)
+	c := user2.NewUserServiceClient(conn)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
 	for _, testCase := range testCases {
 		t.Run(testCase.TestName, func(t *testing.T) {
 
-			r, err := c.GetUserByName(ctx, &proto.UserGetReq{Name: testCase.UserDate})
+			r, err := c.GetUserByName(ctx, &user2.UserGetReq{Name: testCase.UserDate})
 			require.NoError(t, err)
 
 			assert.Equal(t, testCase.StatusCode, r.Code, "They should be equal")
@@ -67,14 +67,14 @@ func TestUserService_GetUsers(t *testing.T) {
 	conn, err := grpc.Dial(":8084", grpc.WithTransportCredentials(helper.GetClientCred()), grpc.WithPerRPCCredentials(user))
 	require.NoError(t, err)
 
-	c := proto.NewUserServiceClient(conn)
+	c := user2.NewUserServiceClient(conn)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
 	for _, testCase := range testCases {
 		t.Run(testCase.TestName, func(t *testing.T) {
 
-			r, err := c.GetUsers(ctx, &proto.UsersGetReq{
+			r, err := c.GetUsers(ctx, &user2.UsersGetReq{
 				Page:  testCase.NumDate,
 				Limit: testCase.SizeDate,
 			})
@@ -104,13 +104,13 @@ func TestUserService_AddUser(t *testing.T) {
 
 	require.NoError(t, err)
 	defer conn.Close()
-	c := proto.NewUserServiceClient(conn)
+	c := user2.NewUserServiceClient(conn)
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
 	defer cancel()
 
 	for _, testCase := range testCases { //进行三次测试
 		t.Run(testCase.TestName, func(t *testing.T) {
-			r, err := c.AddUser(ctx, &proto.UserPostReq{Name: testCase.UserDate})
+			r, err := c.AddUser(ctx, &user2.UserPostReq{Name: testCase.UserDate})
 			require.NoError(t, err)
 
 			assert.Equal(t, testCase.StatusCode, r.Code, "They should be equal")
@@ -137,13 +137,13 @@ func TestUserService_UpdUserName(t *testing.T) {
 
 	require.NoError(t, err)
 	defer conn.Close()
-	c := proto.NewUserServiceClient(conn)
+	c := user2.NewUserServiceClient(conn)
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
 	defer cancel()
 
 	for _, testCase := range testCases {
 		t.Run(testCase.TestName, func(t *testing.T) {
-			r, err := c.UpdUserName(ctx, &proto.UserPutReq{
+			r, err := c.UpdUserName(ctx, &user2.UserPutReq{
 				OldName: testCase.OldDate,
 				NewName: testCase.NewDate,
 			})
@@ -169,13 +169,13 @@ func TestUserService_DelUser(t *testing.T) {
 
 	require.NoError(t, err)
 	defer conn.Close()
-	c := proto.NewUserServiceClient(conn)
+	c := user2.NewUserServiceClient(conn)
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
 	defer cancel()
 
 	for _, testCase := range testCases {
 		t.Run(testCase.TestName, func(t *testing.T) {
-			r, err := c.DelUser(ctx, &proto.UserDelReq{Name: testCase.UserDate})
+			r, err := c.DelUser(ctx, &user2.UserDelReq{Name: testCase.UserDate})
 			require.NoError(t, err)
 
 			assert.Equal(t, testCase.StatusCode, r.Code, "They should be equal")
