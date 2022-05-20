@@ -2,18 +2,20 @@ package controller
 
 import (
 	"context"
-	"gRPC_User/helper"
+	"fmt"
+	"gRPC_User/comm"
 	"gRPC_User/model"
 	user2 "gRPC_User/proto/user"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
-	"os"
+	"log"
+	"net"
 	"testing"
 	"time"
 )
 
-var user = &model.Authentication{
+var users = &model.Authentication{
 	User:     "admin",
 	Password: "admin",
 }
@@ -26,11 +28,11 @@ func TestProductService_GetUserByName(t *testing.T) {
 		StatusCode int32
 	}{
 		//测试组
-		{"Test_Right", "joy", 200},
+		{"Test_Right", "joy1", 200},
 		{"Test_Unknown", "ttt", 500},
 	}
 
-	conn, err := grpc.Dial(":8084", grpc.WithTransportCredentials(helper.GetClientCred()), grpc.WithPerRPCCredentials(user))
+	conn, err := grpc.Dial(":8084", grpc.WithTransportCredentials(comm.GetClientCred()), grpc.WithPerRPCCredentials(users))
 	require.NoError(t, err)
 
 	c := user2.NewUserServiceClient(conn)
@@ -50,7 +52,7 @@ func TestProductService_GetUserByName(t *testing.T) {
 
 }
 
-func TestUserService_GetUsers(t *testing.T) {
+func TestUserService_UserList(t *testing.T) {
 
 	testCases := []struct { //定义测试的结构体
 		TestName   string
@@ -64,7 +66,7 @@ func TestUserService_GetUsers(t *testing.T) {
 		{"Test_Size", 2, 100, 400},
 	}
 
-	conn, err := grpc.Dial(":8084", grpc.WithTransportCredentials(helper.GetClientCred()), grpc.WithPerRPCCredentials(user))
+	conn, err := grpc.Dial(":8084", grpc.WithTransportCredentials(comm.GetClientCred()), grpc.WithPerRPCCredentials(users))
 	require.NoError(t, err)
 
 	c := user2.NewUserServiceClient(conn)
@@ -74,7 +76,7 @@ func TestUserService_GetUsers(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(testCase.TestName, func(t *testing.T) {
 
-			r, err := c.GetUsers(ctx, &user2.UsersGetReq{
+			r, err := c.UserList(ctx, &user2.ListGetReq{
 				Page:  testCase.NumDate,
 				Limit: testCase.SizeDate,
 			})
@@ -95,12 +97,12 @@ func TestUserService_AddUser(t *testing.T) {
 		StatusCode int32
 	}{
 		//测试组
-		{"Test_Repeat", "joy", 400},
+		{"Test_Repeat", "joy", 500},
 		{"Test_Length", "k", 400},
-		{"Test_Right", "jakc", 201},
+		{"Test_Right", "jakc121", 201},
 	}
 
-	conn, err := grpc.Dial(":8084", grpc.WithTransportCredentials(helper.GetClientCred()), grpc.WithPerRPCCredentials(user))
+	conn, err := grpc.Dial(":8084", grpc.WithTransportCredentials(comm.GetClientCred()), grpc.WithPerRPCCredentials(users))
 
 	require.NoError(t, err)
 	defer conn.Close()
@@ -110,9 +112,8 @@ func TestUserService_AddUser(t *testing.T) {
 
 	for _, testCase := range testCases { //进行三次测试
 		t.Run(testCase.TestName, func(t *testing.T) {
-			r, err := c.AddUser(ctx, &user2.UserPostReq{Name: testCase.UserDate})
+			r, err := c.AddUser(ctx, &user2.UserAddReq{Name: testCase.UserDate})
 			require.NoError(t, err)
-
 			assert.Equal(t, testCase.StatusCode, r.Code, "They should be equal")
 		})
 	}
@@ -126,14 +127,13 @@ func TestUserService_UpdUserName(t *testing.T) {
 		StatusCode int32
 	}{
 		//测试组
-		{"Test_Right", "joy", "joy1", 201},
-		{"Test_Length", "1111", "k", 400},
-		{"Test_Unknown", "te", "22", 400},
-		{"Test_Repeat", "jack", "mark", 400},
-		{"Test_Empty", "", "", 400},
+		//{"Test_Right", "joy", "joy11", 201},
+		//{"Test_Length", "1111", "k", 400},
+		{"Test_Unknown", "te", "22", 500},
+		//{"Test_Repeat", "jack", "mark", 500},
 	}
 
-	conn, err := grpc.Dial(":8084", grpc.WithTransportCredentials(helper.GetClientCred()), grpc.WithPerRPCCredentials(user))
+	conn, err := grpc.Dial(":8084", grpc.WithTransportCredentials(comm.GetClientCred()), grpc.WithPerRPCCredentials(users))
 
 	require.NoError(t, err)
 	defer conn.Close()
@@ -143,12 +143,11 @@ func TestUserService_UpdUserName(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.TestName, func(t *testing.T) {
-			r, err := c.UpdUserName(ctx, &user2.UserPutReq{
+			r, err := c.UpdUserName(ctx, &user2.UserUpdReq{
 				OldName: testCase.OldDate,
 				NewName: testCase.NewDate,
 			})
 			require.NoError(t, err)
-
 			assert.Equal(t, testCase.StatusCode, r.Code, "They should be equal")
 		})
 	}
@@ -161,11 +160,11 @@ func TestUserService_DelUser(t *testing.T) {
 		StatusCode int32
 	}{
 		//测试组
-		{"Test_Unknown", "want", 400},
-		{"Test_Right", "test1111", 201},
+		{"Test_Unknown", "11111", 500},
+		{"Test_Right", "joy11", 201},
 	}
 
-	conn, err := grpc.Dial(":8084", grpc.WithTransportCredentials(helper.GetClientCred()), grpc.WithPerRPCCredentials(user))
+	conn, err := grpc.Dial(":8084", grpc.WithTransportCredentials(comm.GetClientCred()), grpc.WithPerRPCCredentials(users))
 
 	require.NoError(t, err)
 	defer conn.Close()
@@ -184,9 +183,25 @@ func TestUserService_DelUser(t *testing.T) {
 }
 
 func TestMain(m *testing.M) {
+	m.Run()
+}
 
-	retCode := m.Run()
+func init() {
 
-	os.Exit(retCode)
+	rpcServer := grpc.NewServer(grpc.Creds(comm.GetCertService()), grpc.UnaryInterceptor(comm.GetToke()))
+
+	src := &UserService{}
+	user2.RegisterUserServiceServer(rpcServer, src)
+
+	listener, err := net.Listen("tcp", ":8084")
+	if err != nil {
+		panic(err)
+	}
+
+	err = rpcServer.Serve(listener)
+	if err != nil {
+		log.Fatal("启动服务出错", err)
+	}
+	fmt.Println("启动grpc服务端成功")
 
 }

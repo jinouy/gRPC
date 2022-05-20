@@ -7,7 +7,6 @@ import (
 	"google.golang.org/grpc"
 	"log"
 	"net"
-	"os"
 	"sync"
 	"time"
 )
@@ -62,8 +61,6 @@ type Service struct {
 
 func (s *Service) SayHi(stream pb.OnLineChat_SayHiServer) error {
 
-	//md, _ := metadata.FromIncomingContext(stream.Context())
-	//username := md["name"][0] // 从metadata中获取用户名信息，可以理解为请求头里的数据
 	recv, err := stream.Recv()
 	if err != nil {
 		return nil
@@ -102,21 +99,14 @@ func (s *Service) SayHi(stream pb.OnLineChat_SayHiServer) error {
 		}
 		connect_pool.BroadCast(username, fmt.Sprintf("%s: %s", username, req.Message))
 	}
-	return nil
-}
 
-func GetListen() string {
-	if len(os.Args) < 2 {
-		return ":9999"
-	}
-	return os.Args[1]
 }
 
 func main() {
 	connect_pool = &ConnectPool{}
 
 	// 监听一个 地址:端口
-	address, err := net.Listen("tcp", GetListen())
+	address, err := net.Listen("tcp", ":9999")
 	if err != nil {
 		panic(err)
 	}

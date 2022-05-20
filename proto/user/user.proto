@@ -1,17 +1,17 @@
 syntax = "proto3";
 
-package proto;
-option go_package = "../proto";
+package user;
+option go_package = "../user";
 
 service UserService{
   // 获取单个用户信息
   rpc GetUserByName(UserGetReq) returns (UserGetResp);
   // 获取所有用户信息，分页查找
-  rpc GetUsers(UsersGetReq) returns(UsersGetResp);
+  rpc UserList(ListGetReq) returns(ListGetResp);
   // 添加用户信息
-  rpc AddUser(UserPostReq) returns(UserPostResp);
+  rpc AddUser(UserAddReq) returns(UserAddResp);
   // 更新用户名字
-  rpc UpdUserName(UserPutReq) returns(UserPutResp);
+  rpc UpdUserName(UserUpdReq) returns(UserUpdResp);
   // 删除用户
   rpc DelUser(UserDelReq) returns(UserDelResp);
 }
@@ -34,38 +34,38 @@ message UserGetResp{
   string msg = 3;
 }
 // 更新名字
-message UserPutReq{
+message UserUpdReq{
   string old_name = 1;
   string new_name = 2;
 }
 
 // 返回更新名字的结果
-message UserPutResp{
+message UserUpdResp{
   User user = 1;
   int32 code = 2;
   string msg = 3;
 }
 
 // 查询所有
-message UsersGetReq{
+message ListGetReq{
   int32 page = 1;
   int32 limit = 2;
 }
 
 // 返回查询所有的结果
-message UsersGetResp{
+message ListGetResp{
   repeated User user = 1;
   int32 code = 2;
   string msg = 3;
 }
 
 // 添加用户
-message UserPostReq{
+message UserAddReq{
   string name = 1;
 }
 
 // 返回添加用户的结果
-message UserPostResp{
+message UserAddResp{
   User user = 1;
   int32 code = 2;
   string msg = 3;

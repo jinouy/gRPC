@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"context"
-	"flag"
 	"fmt"
 	pb "gRPC_User/proto/chat"
 	"google.golang.org/grpc"
@@ -15,7 +14,6 @@ import (
 	"time"
 )
 
-// client.exe -name xxxx -address xxxxx 不写使用默认值
 var mutex sync.Mutex
 
 // 这是一个加锁的输出，防止乱序或中间插入print数据
@@ -42,8 +40,6 @@ func Input(prompt string) string {
 }
 
 func main() {
-	// 接受命令行参数
-	flag.Parse()
 
 	// 创建连接，拨号
 	conn, err := grpc.Dial("localhost:9999", grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -59,14 +55,8 @@ func main() {
 	var baseMsg pb.HiRequest
 	fmt.Println("请输入用户昵称：")
 	_, _ = fmt.Scanln(&baseMsg.Name)
-	//fmt.Println("用户昵称为：", baseMsg.Name)
 
-	//var name *string = flag.String("name", baseMsg.Name, "what's your name?")
-
-	// 声明 context
-	//ctx := context.Background()
 	ctx, cancel := context.WithCancel(context.Background())
-	//ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs("name", *name))
 
 	// 创建双向数据流
 	stream, err := client.SayHi(ctx)

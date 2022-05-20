@@ -5,6 +5,7 @@ import (
 	"gRPC_User/dao"
 	"gRPC_User/model"
 	"gRPC_User/proto/user"
+	"gorm.io/gorm"
 	"log"
 	"net/http"
 )
@@ -35,14 +36,14 @@ func (p *UserService) GetUserByName(ctx context.Context, req *user.UserGetReq) (
 
 }
 
-func (p *UserService) GetUsers(ctx context.Context, req *user.UsersGetReq) (*user.UsersGetResp, error) {
+func (p *UserService) UserList(ctx context.Context, req *user.ListGetReq) (*user.ListGetResp, error) {
 
 	if len(string(req.Page)) == 0 || len(string(req.Limit)) == 0 {
-		return &user.UsersGetResp{Code: http.StatusBadRequest, Msg: "参数为空"}, nil
+		return &user.ListGetResp{Code: http.StatusBadRequest, Msg: "参数为空"}, nil
 		log.Fatal("参数为空")
 	}
 
-	var re user.UsersGetResp
+	var re user.ListGetResp
 
 	page := &model.Page{
 		PageNum:  int(req.Page),
@@ -51,10 +52,10 @@ func (p *UserService) GetUsers(ctx context.Context, req *user.UsersGetReq) (*use
 
 	users, err := dao.GetUsersPage(page)
 	if err != nil {
-		return &user.UsersGetResp{Code: http.StatusInternalServerError, Msg: err.Error()}, nil
+		return &user.ListGetResp{Code: http.StatusInternalServerError, Msg: err.Error()}, nil
 	}
 	if len(users) == 0 {
-		return &user.UsersGetResp{Code: http.StatusInternalServerError, Msg: "查询页面过大"}, nil
+		return &user.ListGetResp{Code: http.StatusInternalServerError, Msg: "查询页面过大"}, nil
 	}
 
 	for _, v := range users {
@@ -73,46 +74,40 @@ func (p *UserService) GetUsers(ctx context.Context, req *user.UsersGetReq) (*use
 
 }
 
-func (p *UserService) AddUser(ctx context.Context, req *user.UserPostReq) (*user.UserPostResp, error) {
+func (p *UserService) AddUser(ctx context.Context, req *user.UserAddReq) (*user.UserAddResp, error) {
 
 	if len(req.Name) < 2 || len(req.Name) > 8 {
-		return &user.UserPostResp{Code: http.StatusBadRequest, Msg: "参数长度不正确"}, nil
+		return &user.UserAddResp{Code: http.StatusBadRequest, Msg: "参数长度不正确"}, nil
 		log.Fatal("参数长度不正确")
 	}
 	u := &model.User{Name: req.Name}
 
-	Userknown, err := dao.GetUserByName(u)
-	if Userknown.Name == req.Name {
-		return &user.UserPostResp{Code: http.StatusBadRequest, Msg: "名字已存在"}, nil
+	Known, err := dao.GetUserByName(u)
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return &user.UserAddResp{Code: http.StatusInternalServerError, Msg: err.Error()}, err
 	}
-	if err != nil {
-		if err.Error() == "名字不存在" {
-			users, err := dao.AddUser(u) //进行数据库的增加操作
+	if Known != nil {
 
-			if err != nil { //数据库怠机，返回错误
-				return &user.UserPostResp{Code: http.StatusInternalServerError, Msg: err.Error()}, err
-			}
-
-			userpro := &user.User{
-				Id:        int64(users.ID),
-				CreatedAt: users.CreatedAt.String(),
-				UpdatedAt: users.UpdatedAt.String(),
-				Name:      users.Name,
-			}
-			return &user.UserPostResp{User: userpro, Code: http.StatusCreated, Msg: "数据添加成功"}, nil
-
-		} else {
-			return &user.UserPostResp{Code: http.StatusInternalServerError, Msg: err.Error()}, err
-		}
+		return &user.UserAddResp{Code: http.StatusInternalServerError, Msg: "名字已经存在"}, err
 	}
-	return nil, nil
 
+	users, err := dao.AddUser(u) //进行数据库的增加操作
+	if err != nil {              //数据库怠机，返回错误
+		return &user.UserAddResp{Code: http.StatusInternalServerError, Msg: err.Error()}, err
+	}
+	userpro := &user.User{
+		Id:        int64(users.ID),
+		CreatedAt: users.CreatedAt.String(),
+		UpdatedAt: users.UpdatedAt.String(),
+		Name:      users.Name,
+	}
+	return &user.UserAddResp{User: userpro, Code: http.StatusCreated, Msg: "数据添加成功"}, nil
 }
 
-func (p *UserService) UpdUserName(ctx context.Context, req *user.UserPutReq) (*user.UserPutResp, error) {
+func (p *UserService) UpdUserName(ctx context.Context, req *user.UserUpdReq) (*user.UserUpdResp, error) {
 
 	if len(req.NewName) < 2 || len(req.NewName) > 10 || len(req.OldName) == 0 || len(req.NewName) == 0 {
-		return &user.UserPutResp{Code: http.StatusBadRequest, Msg: "参数错误"}, nil
+		return &user.UserUpdResp{Code: http.StatusBadRequest, Msg: "参数错误"}, nil
 		log.Fatal("参数错误")
 	}
 
@@ -128,31 +123,34 @@ func (p *UserService) UpdUserName(ctx context.Context, req *user.UserPutReq) (*u
 	}
 
 	errUnknown, err := dao.GetUserByName(userNewname)
-	if errUnknown != (model.User{}) {
-		return &user.UserPutResp{Code: http.StatusBadRequest, Msg: "名字已存在"}, nil
+
+	if errUnknown != nil {
+
+		return &user.UserUpdResp{Code: http.StatusInternalServerError, Msg: "名字已存在"}, nil
 	}
-	if err != nil {
-		return &user.UserPutResp{Code: http.StatusInternalServerError, Msg: "数据库怠机"}, err
+	if err != nil && err != gorm.ErrRecordNotFound {
+
+		return &user.UserUpdResp{Code: http.StatusInternalServerError, Msg: err.Error()}, err
 	}
-	_, err = dao.GetUserByName(userOldname)
-	if err != nil { //添加相同名字的限制条件，如果相同就返回错误
-		return &user.UserPutResp{Code: http.StatusBadRequest, Msg: err.Error()}, nil
-	}
-	if err != nil {
-		return &user.UserPutResp{Code: http.StatusInternalServerError, Msg: "数据库怠机"}, err
-	}
-	users, err := dao.DpdUser(username)
-	if err != nil {
-		return &user.UserPutResp{Code: http.StatusInternalServerError, Msg: "数据库怠机"}, err
+	errknown, err := dao.GetUserByName(userOldname)
+	if errknown != nil {
+
+		users, err := dao.DpdUser(username)
+		if err != nil {
+			return &user.UserUpdResp{Code: http.StatusInternalServerError, Msg: "数据库怠机"}, err
+		}
+
+		userpro := &user.User{
+			Id:        int64(users.ID),
+			CreatedAt: users.CreatedAt.String(),
+			UpdatedAt: users.UpdatedAt.String(),
+			Name:      users.Name,
+		}
+		return &user.UserUpdResp{User: userpro, Code: http.StatusCreated, Msg: "插入成功"}, nil
+	} else {
+		return &user.UserUpdResp{Code: http.StatusInternalServerError, Msg: "名字不存在"}, nil
 	}
 
-	userpro := &user.User{
-		Id:        int64(users.ID),
-		CreatedAt: users.CreatedAt.String(),
-		UpdatedAt: users.UpdatedAt.String(),
-		Name:      users.Name,
-	}
-	return &user.UserPutResp{User: userpro, Code: http.StatusCreated, Msg: "插入成功"}, nil
 }
 
 func (p *UserService) DelUser(context context.Context, req *user.UserDelReq) (*user.UserDelResp, error) {
@@ -162,7 +160,7 @@ func (p *UserService) DelUser(context context.Context, req *user.UserDelReq) (*u
 	}
 	users, err := dao.GetUserByName(u)
 	if err != nil {
-		return &user.UserDelResp{Code: http.StatusBadRequest, Msg: err.Error()}, nil
+		return &user.UserDelResp{Code: http.StatusInternalServerError, Msg: err.Error()}, nil
 	}
 	err = dao.DelUser(u)
 	if err != nil {
