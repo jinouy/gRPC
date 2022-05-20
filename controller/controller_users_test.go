@@ -183,10 +183,11 @@ func TestUserService_DelUser(t *testing.T) {
 }
 
 func TestMain(m *testing.M) {
+	go InitServer()
 	m.Run()
 }
 
-func init() {
+func InitServer() {
 
 	rpcServer := grpc.NewServer(grpc.Creds(comm.GetCertService()), grpc.UnaryInterceptor(comm.GetToke()))
 
