@@ -7,22 +7,26 @@ import (
 	"google.golang.org/grpc"
 	"log"
 	"net"
+	"sync"
 	"time"
 )
 
 type ConnectPool struct {
-	Map map[string]interface{}
-	//Lock *sync.RWMutex
+	Map  map[string]interface{}
+	Lock *sync.RWMutex
 }
 
 func NewConcurMap() *ConnectPool {
 	return &ConnectPool{
-		Map: make(map[string]interface{}, 10),
-		//Lock: &sync.RWMutex{},
+		Map:  make(map[string]interface{}, 10),
+		Lock: &sync.RWMutex{},
 	}
 }
 
 func (p *ConnectPool) Get(name string) pb.OnLineChat_SayHiServer {
+	p.Lock.RLock()
+
+	defer p.Lock.RUnlock()
 
 	if stream, ok := p.Map[name]; ok {
 		return stream.(pb.OnLineChat_SayHiServer)
@@ -32,18 +36,17 @@ func (p *ConnectPool) Get(name string) pb.OnLineChat_SayHiServer {
 }
 
 func (p *ConnectPool) Add(name string, stream pb.OnLineChat_SayHiServer) {
-	//p.Lock.Lock()
-	//
-	//defer p.Lock.Unlock()
+	p.Lock.Lock()
+
+	defer p.Lock.Unlock()
 
 	p.Map[name] = stream.(pb.OnLineChat_SayHiServer)
 }
 
 func (p *ConnectPool) Del(name string) {
+	p.Lock.Lock()
 
-	//p.Lock.RLock()
-	//
-	//defer p.Lock.RUnlock()
+	defer p.Lock.Unlock()
 
 	delete(p.Map, name)
 }
