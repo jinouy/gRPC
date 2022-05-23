@@ -12,13 +12,13 @@ import (
 )
 
 type ConnectPool struct {
-	Map  map[string]interface{}
+	Map  map[string]pb.OnLineChat_SayHiServer
 	Lock *sync.RWMutex
 }
 
 func NewConcurMap() *ConnectPool {
 	return &ConnectPool{
-		Map:  make(map[string]interface{}, 10),
+		Map:  make(map[string]pb.OnLineChat_SayHiServer, 10),
 		Lock: &sync.RWMutex{},
 	}
 }
