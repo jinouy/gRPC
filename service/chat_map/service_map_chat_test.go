@@ -46,6 +46,7 @@ func TestService_SayHi(t *testing.T) {
 			err = stream.Send(&chat.HiRequest{Name: testCase.UserName})
 			require.NoError(t, err)
 
+			//接收 服务端信息
 			reply, err := stream.Recv()
 			require.NoError(t, err)
 
@@ -53,8 +54,6 @@ func TestService_SayHi(t *testing.T) {
 			if reply.MessageType == 1 {
 				return
 			}
-
-			//接收 服务端信息
 
 			var line string
 			line = testCase.SayHi
