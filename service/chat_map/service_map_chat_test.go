@@ -25,7 +25,7 @@ func TestService_SayHi(t *testing.T) {
 		MessageType chat.HiReply_MessageType
 	}{
 		//测试组
-		{"Test_Right", "joy", "hiii", 0},
+		{"Test_Right", "joy", "hello", 0},
 		{"Test_Repeat", "joy", "hi", 1},
 		{"Test_Exit", "jack", "exit", 0},
 		{"Test_Inner", "jack", "你好", 0},
