@@ -16,6 +16,8 @@ import (
 	"time"
 )
 
+var mutex sync.Mutex
+
 type ConnectPool struct {
 	Map  map[string]pb.OnLineChat_SayHiServer
 	Lock *sync.RWMutex
@@ -58,8 +60,12 @@ func (p *ConnectPool) Del(name string) {
 
 func (p *ConnectPool) BroadCast(from, message string) bool {
 
+	defer mutex.Unlock()
+	mutex.Lock()
+
 	defer p.Lock.RUnlock()
 	p.Lock.RLock()
+	
 	log.Printf("message: %s\n", message)
 	for username, stream_i := range p.Map {
 		stream := stream_i
