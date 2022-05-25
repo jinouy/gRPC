@@ -59,11 +59,10 @@ func (p *ConnectPool) Del(name string) {
 func (p *ConnectPool) BroadCast(from, message string) bool {
 
 	defer p.Lock.RUnlock()
+	p.Lock.RLock()
 	log.Printf("message: %s\n", message)
 	for username, stream_i := range p.Map {
-		p.Lock.RLock()
-		stream := stream_i.(pb.OnLineChat_SayHiServer)
-
+		stream := stream_i
 		if username != from {
 			stream.Send(&pb.HiReply{
 				Message: message,
@@ -99,9 +98,9 @@ func (s *Service) SayHi(stream pb.OnLineChat_SayHiServer) error {
 		return status.Errorf(codes.Unimplemented, "名字已经存在")
 	} else { // 连接成功
 		connect_pool.Add(username, stream)
-		//stream.Send(&pb.HiReply{
-		//	Message: fmt.Sprintf("连接成功!"),
-		//})
+		stream.Send(&pb.HiReply{
+			Message: fmt.Sprintf("连接成功!"),
+		})
 	}
 
 	go func() {

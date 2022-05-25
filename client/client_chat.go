@@ -76,8 +76,8 @@ func main() {
 			reply, err = stream.Recv()
 			if err != nil {
 				log.Printf("数据传输失败: %v", err)
+				cancel()
 				return
-
 			}
 			ConsoleLog(reply.Message)
 
