@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"gRPC_User/client/auth"
+	"gRPC_User/model"
 	"gRPC_User/proto/chat"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
@@ -22,88 +24,85 @@ func TestService_SayHi(t *testing.T) {
 		SayHello2 string
 	}{
 		//测试组
-		{"Test_Coven", "joy", "jack", "hello", "hi"},
+		//{"Test_Coven", "joy", "jack", "hello", "hi"},
 		{"Test_Repeat", "joy", "jack", "exit", "hi"},
-		{"Test_Quit", "jack", "jack", "exit", "hi"},
+		//{"Test_Quit", "jack", "jack", "exit", "hi"},
 	}
 
 	for _, testCase := range testCases {
 		t.Run(testCase.TestName, func(t *testing.T) {
 
+			var err error
+			var opts []grpc.DialOption
+
+			opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
+
+			opts = append(opts, grpc.WithPerRPCCredentials(new(model.Auth)))
+
+			opts = append(opts, grpc.WithUnaryInterceptor(auth.Clientinerceptor))
+
 			// 创建连接，拨号
-			conn, err := grpc.Dial("localhost:9999", grpc.WithTransportCredentials(insecure.NewCredentials()))
+			conn, err := grpc.Dial("localhost:9999", opts...)
 			require.NoError(t, err)
 
 			defer conn.Close()
+			client1 := chat.NewOnLineChatClient(conn)
+			ctx1, cancel1 := context.WithCancel(context.Background())
 
-			wg.Add(2)
-			go func() {
-				client1 := chat.NewOnLineChatClient(conn)
-				ctx, cancel := context.WithCancel(context.Background())
-				stream1, err := client1.SayHi(ctx)
-				require.NoError(t, err)
+			stream1, err := client1.SayHi(ctx1)
+			require.NoError(t, err)
 
-				defer wg.Done()
-				err = stream1.Send(&chat.HiRequest{Name: testCase.UserName1})
+			client2 := chat.NewOnLineChatClient(conn)
+			// 创建双向数据流
+			ctx2, cancel2 := context.WithCancel(context.Background())
+			stream2, err := client2.SayHi(ctx2)
+			require.NoError(t, err)
+
+			// 发送信息
+			//err = stream1.Send(&chat.HiRequest{Name: testCase.UserName1})
+			//require.NoError(t, err)
+			if testCase.SayHello1 != "exit" {
+				err = stream1.Send(&chat.HiRequest{Message: testCase.SayHello1})
 				require.NoError(t, err)
 
 				//接收 服务端信息
 				reply, err := stream1.Recv()
 				require.NoError(t, err)
-				if reply.MessageType == 1 {
-					return
-				}
-
-				var line string
-				line = testCase.SayHello1
-				if line == "exit" {
-					cancel()
-					return
-				}
-				err = stream1.Send(&chat.HiRequest{Message: line})
-				require.NoError(t, err)
+				//if reply.MessageType == 1 {
+				//	return
+				//}
 				if reply.Message != "" {
 					return
 				} else {
 					t.Error("没有传到客户端")
 				}
-			}()
+			}
 
-			go func() {
-				// 声明客户端
-				client2 := chat.NewOnLineChatClient(conn)
-				// 创建双向数据流
-				ctx, cancel := context.WithCancel(context.Background())
-				stream2, err := client2.SayHi(ctx)
-				require.NoError(t, err)
-
-				defer wg.Done()
-				err = stream2.Send(&chat.HiRequest{Name: testCase.UserName2})
+			//err = stream2.Send(&chat.HiRequest{Name: testCase.UserName2})
+			//require.NoError(t, err)
+			if testCase.SayHello2 != "exit" {
+				err = stream2.Send(&chat.HiRequest{Message: testCase.SayHello2})
 				require.NoError(t, err)
 
 				//接收 服务端信息
 				reply, err := stream2.Recv()
 				require.NoError(t, err)
-				if reply.MessageType == 1 {
-					return
-				}
+				//if reply.MessageType == 1 {
+				//	return
+				//}
 
-				var line string
-				line = testCase.SayHello2
-				if line == "exit" {
-					cancel()
-					return
-				}
-				err = stream2.Send(&chat.HiRequest{Message: line})
-				require.NoError(t, err)
 				if reply.Message != "" {
 					return
 				} else {
 					t.Error("没有传到客户端")
 				}
-
-			}()
-			wg.Wait()
+			}
+			if testCase.SayHello1 == "exit" {
+				cancel1()
+			}
+			if testCase.SayHello2 == "exit" {
+				cancel2()
+			}
 
 		})
 	}

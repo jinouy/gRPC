@@ -27,7 +27,6 @@ func GetToke() grpc.UnaryServerInterceptor {
 		return handler(ctx, req)
 	}
 	return authInterceptor
-
 }
 
 func Auth(ctx context.Context) error {

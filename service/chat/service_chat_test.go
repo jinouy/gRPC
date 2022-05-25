@@ -10,12 +10,6 @@ import (
 	"testing"
 )
 
-const (
-	HiReply_CONNECT_SUCCESS chat.HiReply_MessageType = 0
-	HiReply_CONNECT_FAILED  chat.HiReply_MessageType = 1
-	HiReply_NORMAL_MESSAGE  chat.HiReply_MessageType = 2
-)
-
 func TestService_SayHi(t *testing.T) {
 
 	testCases := []struct { //定义测试的结构体
@@ -25,9 +19,9 @@ func TestService_SayHi(t *testing.T) {
 		MessageType chat.HiReply_MessageType
 	}{
 		//测试组
-		{"Test1", "joy", "1111", HiReply_CONNECT_SUCCESS},
-		{"Test2", "k", "1111", HiReply_CONNECT_SUCCESS},
-		{"Test3", "jakc121", "1111", HiReply_CONNECT_FAILED},
+		{"Test1", "joy", "hello", 0},
+		{"Test2", "joy", "hi", 1},
+		{"Test3", "jack", "bye", 0},
 	}
 
 	// 创建连接
@@ -49,9 +43,13 @@ func TestService_SayHi(t *testing.T) {
 			stream, err := chatTest.SayHi(ctx)
 			require.NoError(t, err)
 
-			user := &chat.HiRequest{Name: testCase.UserName}
-
-			err = stream.Send(user)
+			go func() {
+				err = stream.Send(&chat.HiRequest{
+					Name:    testCase.UserName,
+					Message: testCase.SayHi,
+				})
+				require.NoError(t, err)
+			}()
 
 			//connected := make(chan bool)
 
@@ -63,9 +61,8 @@ func TestService_SayHi(t *testing.T) {
 				for {
 					reply, err = stream.Recv()
 					require.NoError(t, err)
+					assert.Equal(t, testCase.MessageType, reply.MessageType, "They should be equal")
 				}
-				assert.Equal(t, testCase.MessageType, reply.MessageType, "They should be equal")
-
 			}()
 
 		})

@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"gRPC_User/client/auth"
+	"gRPC_User/model"
 	pb "gRPC_User/proto/chat"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -41,8 +43,20 @@ func Input(prompt string) string {
 
 func main() {
 
+	var err error
+	var opts []grpc.DialOption
+
+	opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
+
+	opts = append(opts, grpc.WithPerRPCCredentials(new(model.Auth)))
+
+	opts = append(opts, grpc.WithUnaryInterceptor(auth.Clientinerceptor))
+
+	//var Users = &model.Auth{
+	//	User: auth.InputName(),
+	//}
 	// 创建连接，拨号
-	conn, err := grpc.Dial("localhost:9999", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial("localhost:9999", opts...)
 	if err != nil {
 		log.Printf("连接失败: [%v] ", err)
 		return
@@ -52,10 +66,6 @@ func main() {
 	// 声明客户端
 	client := pb.NewOnLineChatClient(conn)
 
-	var baseMsg pb.HiRequest
-	fmt.Println("请输入用户昵称：")
-	_, _ = fmt.Scanln(&baseMsg.Name)
-
 	ctx, cancel := context.WithCancel(context.Background())
 
 	// 创建双向数据流
@@ -63,11 +73,11 @@ func main() {
 	if err != nil {
 		log.Printf("创建数据流失败: [%v] ", err)
 	}
-	user := &pb.HiRequest{Name: baseMsg.Name}
-	err = stream.Send(user)
+	//user := &pb.HiRequest{Name: Users.User}
+	//err = stream.Send(user)
 
 	// 创建了一个连接管道
-	connected := make(chan bool)
+	//connected := make(chan bool)
 
 	// 接收 服务端信息
 	go func() {
@@ -82,19 +92,19 @@ func main() {
 			}
 			ConsoleLog(reply.Message)
 
-			if reply.MessageType == pb.HiReply_CONNECT_FAILED { // code=1 连接失败
-				cancel()
-				break
-			}
-			if reply.MessageType == pb.HiReply_CONNECT_SUCCESS { // code=0 连接成功
-				connected <- true
-			}
+			//if reply.MessageType == pb.HiReply_CONNECT_FAILED { // code=1 连接失败
+			//	cancel()
+			//	break
+			//}
+			//if reply.MessageType == pb.HiReply_CONNECT_SUCCESS { // code=0 连接成功
+			//	connected <- true
+			//}
 			// 基本都是两个if都不执行，去下一次循环,返回的是 code=2 正常消息
 		}
 	}()
 
 	go func() {
-		<-connected
+		//<-connected
 		var (
 			line string
 			err  error

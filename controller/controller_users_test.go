@@ -11,6 +11,7 @@ import (
 	"google.golang.org/grpc"
 	"log"
 	"net"
+	"os"
 	"testing"
 	"time"
 )
@@ -184,7 +185,9 @@ func TestUserService_DelUser(t *testing.T) {
 
 func TestMain(m *testing.M) {
 	go InitServer()
-	m.Run()
+	time.Sleep(2 * time.Second)
+	res := m.Run()
+	os.Exit(res)
 }
 
 func InitServer() {
