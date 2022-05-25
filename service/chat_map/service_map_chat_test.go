@@ -66,11 +66,7 @@ func TestService_SayHi(t *testing.T) {
 				//if reply.MessageType == 1 {
 				//	return
 				//}
-				if reply.Message != "" {
-					return
-				} else {
-					t.Error("没有传到客户端")
-				}
+				require.Equal(t, reply.Message, testCase.UserName2+": "+testCase.SayHello2)
 			}
 
 			//err = stream2.Send(&chat.HiRequest{Name: testCase.UserName2})
@@ -85,12 +81,7 @@ func TestService_SayHi(t *testing.T) {
 				//if reply.MessageType == 1 {
 				//	return
 				//}
-
-				if reply.Message != "" {
-					return
-				} else {
-					t.Error("没有传到客户端")
-				}
+				require.Equal(t, reply.Message, testCase.UserName1+": "+testCase.SayHello1)
 			}
 			if testCase.SayHello1 == "exit" {
 				cancel1()
