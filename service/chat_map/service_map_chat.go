@@ -16,8 +16,6 @@ import (
 	"time"
 )
 
-var mutex sync.Mutex
-
 type ConnectPool struct {
 	Map  map[string]pb.OnLineChat_SayHiServer
 	Lock *sync.RWMutex
@@ -36,7 +34,7 @@ func (p *ConnectPool) Get(name string) pb.OnLineChat_SayHiServer {
 	defer p.Lock.RUnlock()
 
 	if stream, ok := p.Map[name]; ok {
-		return stream.(pb.OnLineChat_SayHiServer)
+		return stream
 	} else {
 		return nil
 	}
@@ -59,11 +57,11 @@ func (p *ConnectPool) Del(name string) {
 }
 
 func (p *ConnectPool) BroadCast(from, message string) bool {
-	mutex.Lock()
-	defer mutex.Unlock()
+
+	defer p.Lock.RUnlock()
 	log.Printf("message: %s\n", message)
 	for username, stream_i := range p.Map {
-
+		p.Lock.RLock()
 		stream := stream_i.(pb.OnLineChat_SayHiServer)
 
 		if username != from {
@@ -98,9 +96,6 @@ func (s *Service) SayHi(stream pb.OnLineChat_SayHiServer) error {
 	username := User
 
 	if connect_pool.Get(username) != nil {
-		stream.Send(&pb.HiReply{
-			Message: fmt.Sprintf("名字: %s 已经存在", username),
-		})
 		return status.Errorf(codes.Unimplemented, "名字已经存在")
 	} else { // 连接成功
 		connect_pool.Add(username, stream)
@@ -141,7 +136,8 @@ func main() {
 	// 监听一个 地址:端口
 	address, err := net.Listen("tcp", ":9999")
 	if err != nil {
-		log.Panicf("Failed to listen:%v", err)
+		log.Printf("Failed to listen: %v", err)
+		return
 	}
 
 	// 实例化grpc Server，并开启拦截器
@@ -150,7 +146,8 @@ func main() {
 
 	// 启动服务
 	if err := ser.Serve(address); err != nil {
-		log.Panicf("Failed to start:%v", err)
+		log.Printf("Failed to start: %v", err)
+		return
 	}
 }
 

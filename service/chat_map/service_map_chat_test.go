@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"gRPC_User/client/auth"
-	"gRPC_User/model"
 	"gRPC_User/proto/chat"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
@@ -21,23 +19,16 @@ func TestService_SayHi(t *testing.T) {
 		SayHello2 string
 	}{
 		//测试组
-		//{"Test_Coven", "joy", "jack", "hello", "hi"},
+		{"Test_Coven", "joy", "jack", "hello", "hi"},
 		{"Test_Repeat", "joy", "jack", "exit", "hi"},
-		//{"Test_Quit", "jack", "jack", "exit", "hi"},
+		{"Test_Quit", "jack", "jack", "exit", "hi"},
 	}
 
 	for _, testCase := range testCases {
 		t.Run(testCase.TestName, func(t *testing.T) {
 
-			var err error
-			var opts []grpc.DialOption
-
-			opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
-			opts = append(opts, grpc.WithPerRPCCredentials(new(model.Auth)))
-			opts = append(opts, grpc.WithUnaryInterceptor(auth.Clientinerceptor))
-
 			// 创建连接，拨号
-			conn, err := grpc.Dial("localhost:9999", opts...)
+			conn, err := grpc.Dial("localhost:9999", grpc.WithTransportCredentials(insecure.NewCredentials()))
 			require.NoError(t, err)
 
 			defer conn.Close()
@@ -54,8 +45,8 @@ func TestService_SayHi(t *testing.T) {
 			require.NoError(t, err)
 
 			// 发送信息
-			//err = stream1.Send(&chat.HiRequest{Name: testCase.UserName1})
-			//require.NoError(t, err)
+			err = stream1.Send(&chat.HiRequest{Name: testCase.UserName1})
+			require.NoError(t, err)
 			if testCase.SayHello1 != "exit" {
 				err = stream1.Send(&chat.HiRequest{Message: testCase.SayHello1})
 				require.NoError(t, err)
@@ -63,14 +54,14 @@ func TestService_SayHi(t *testing.T) {
 				//接收 服务端信息
 				reply, err := stream1.Recv()
 				require.NoError(t, err)
-				//if reply.MessageType == 1 {
-				//	return
-				//}
+				if reply.MessageType == 1 {
+					return
+				}
 				require.Equal(t, reply.Message, testCase.UserName2+": "+testCase.SayHello2)
 			}
 
-			//err = stream2.Send(&chat.HiRequest{Name: testCase.UserName2})
-			//require.NoError(t, err)
+			err = stream2.Send(&chat.HiRequest{Name: testCase.UserName2})
+			require.NoError(t, err)
 			if testCase.SayHello2 != "exit" {
 				err = stream2.Send(&chat.HiRequest{Message: testCase.SayHello2})
 				require.NoError(t, err)
@@ -78,9 +69,9 @@ func TestService_SayHi(t *testing.T) {
 				//接收 服务端信息
 				reply, err := stream2.Recv()
 				require.NoError(t, err)
-				//if reply.MessageType == 1 {
-				//	return
-				//}
+				if reply.MessageType == 1 {
+					return
+				}
 				require.Equal(t, reply.Message, testCase.UserName1+": "+testCase.SayHello1)
 			}
 			if testCase.SayHello1 == "exit" {

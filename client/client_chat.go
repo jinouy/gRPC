@@ -17,23 +17,22 @@ import (
 
 func ConsoleLog(message string) {
 
-	t := time.Now()
-	fmt.Printf("\n------ %s -----\n%s\n> ", t.UTC().Format("2006-01-02 15:04:05"), message)
+	fmt.Printf("\n------ %s -----\n%s\n> ", time.Now().Format("2006-01-02 15:04:05"), message)
 }
 
 // 输入
-func Input(prompt string) string {
+func Input(prompt string) (string, error) {
 	fmt.Print(prompt)
 	reader := bufio.NewReader(os.Stdin)
 	line, _, err := reader.ReadLine()
 	if err != nil {
 		if err == io.EOF {
-			return ""
+			return "", nil
 		} else {
-			panic(err)
+			return "", err
 		}
 	}
-	return string(line)
+	return string(line), nil
 }
 
 func main() {
@@ -63,7 +62,8 @@ func main() {
 	// 创建双向数据流
 	stream, err := client.SayHi(ctx)
 	if err != nil {
-		log.Printf("创建数据流失败: [%v] ", err)
+		log.Printf("创建数据流失败: %v ", err)
+		return
 	}
 
 	// 接收 服务端信息
@@ -75,7 +75,9 @@ func main() {
 		for {
 			reply, err = stream.Recv()
 			if err != nil {
-				panic(err)
+				log.Printf("数据传输失败: %v", err)
+				return
+
 			}
 			ConsoleLog(reply.Message)
 
@@ -88,7 +90,11 @@ func main() {
 			err  error
 		)
 		for {
-			line = Input("")
+			line, err = Input("")
+			if err != nil {
+				log.Printf("数据输入失败: %v", err)
+				return
+			}
 			if line == "exit" {
 				cancel()
 				break
@@ -98,7 +104,8 @@ func main() {
 			})
 			fmt.Print("> ")
 			if err != nil {
-				panic(err)
+				log.Printf("数据传输失败: %v", err)
+				return
 			}
 		}
 	}()

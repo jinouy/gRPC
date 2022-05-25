@@ -11,13 +11,11 @@ type Authentication struct {
 }
 
 type Auth struct {
-	User string
 }
 
 func (a *Auth) GetRequestMetadata(context.Context, ...string) (map[string]string, error) {
 
-	user := Auth{User: auth.InputName()}
-	return map[string]string{"user": user.User}, nil
+	return map[string]string{"user": auth.InputName()}, nil
 }
 
 func (a *Auth) RequireTransportSecurity() bool {
