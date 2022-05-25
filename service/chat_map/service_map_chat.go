@@ -16,6 +16,8 @@ import (
 	"time"
 )
 
+var mutex sync.Mutex
+
 type ConnectPool struct {
 	Map  map[string]pb.OnLineChat_SayHiServer
 	Lock *sync.RWMutex
@@ -65,8 +67,7 @@ func (p *ConnectPool) BroadCast(from, message string) bool {
 		if username != from {
 			stream.Send(&pb.HiReply{
 				Message: message,
-				//MessageType: pb.HiReply_NORMAL_MESSAGE, // 2.正常数据
-				TS: &timestamp.Timestamp{Seconds: time.Now().Unix()},
+				TS:      &timestamp.Timestamp{Seconds: time.Now().Unix()},
 			})
 		}
 	}
@@ -83,35 +84,26 @@ func (s *Service) SayHi(stream pb.OnLineChat_SayHiServer) error {
 
 	md, ok := metadata.FromIncomingContext(stream.Context())
 	if !ok {
-		log.Fatal("FromIncomingContext error")
+		return status.Errorf(codes.Unimplemented, "no token")
 	}
-	//connect_pool = NewConcurMap()
-	//recv, err := stream.Recv()
-	//if err != nil {
-	//	return nil
-	//}
-	//username := recv.Name
 
 	var User string
 	if val, ok := md["user"]; ok {
 		User = val[0]
+	} else {
+		return status.Errorf(codes.Unimplemented, "no token")
 	}
 	username := User
-	//if User != username {
-	//	return status.Errorf(codes.Unimplemented, "token invalide: user=%s", User)
-	//}
 
 	if connect_pool.Get(username) != nil {
 		stream.Send(&pb.HiReply{
 			Message: fmt.Sprintf("名字: %s 已经存在", username),
-			//MessageType: pb.HiReply_CONNECT_FAILED, // 1. 连接失败 ， 重名了 用户已经存在
 		})
-		return nil
+		return status.Errorf(codes.Unimplemented, "名字已经存在")
 	} else { // 连接成功
 		connect_pool.Add(username, stream)
 		stream.Send(&pb.HiReply{
 			Message: fmt.Sprintf("连接成功!"),
-			//MessageType: pb.HiReply_CONNECT_SUCCESS, // 0 连接成功
 		})
 	}
 
@@ -127,6 +119,8 @@ func (s *Service) SayHi(stream pb.OnLineChat_SayHiServer) error {
 
 	//  阻塞接收 该用户后续传来的消息
 	for {
+		mutex.Lock()
+		defer mutex.Unlock()
 		req, err := stream.Recv()
 		if err != nil {
 			return err
@@ -147,7 +141,7 @@ func main() {
 	// 监听一个 地址:端口
 	address, err := net.Listen("tcp", ":9999")
 	if err != nil {
-		panic(err)
+		log.Panicf("Failed to listen:%v", err)
 	}
 
 	// 实例化grpc Server，并开启拦截器
@@ -156,7 +150,7 @@ func main() {
 
 	// 启动服务
 	if err := ser.Serve(address); err != nil {
-		panic(err)
+		log.Panicf("Failed to start:%v", err)
 	}
 }
 
@@ -172,27 +166,6 @@ func interceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInf
 	return handler(ctx, req)
 
 }
-
-//func GetToke() grpc.UnaryServerInterceptor {
-//
-//	var authInterceptor grpc.UnaryServerInterceptor
-//	authInterceptor = func(
-//		ctx context.Context,
-//		req interface{},
-//		info *grpc.UnaryServerInfo,
-//		handler grpc.UnaryHandler,
-//	) (resp interface{}, err error) {
-//		name := auth.InputName()
-//		//拦截普通方法请求，验证 Token
-//		err = myAuth(ctx, name)
-//		if err != nil {
-//			return
-//		}
-//		// 继续处理请求
-//		return handler(ctx, req)
-//	}
-//	return authInterceptor
-//}
 
 // 认证token
 func myAuth(ctx context.Context, name string) error {

@@ -12,16 +12,11 @@ import (
 	"io"
 	"log"
 	"os"
-	"sync"
 	"time"
 )
 
-var mutex sync.Mutex
-
-// 这是一个加锁的输出，防止乱序或中间插入print数据
 func ConsoleLog(message string) {
-	mutex.Lock()
-	defer mutex.Unlock()
+
 	t := time.Now()
 	fmt.Printf("\n------ %s -----\n%s\n> ", t.UTC().Format("2006-01-02 15:04:05"), message)
 }
@@ -52,9 +47,6 @@ func main() {
 
 	opts = append(opts, grpc.WithUnaryInterceptor(auth.Clientinerceptor))
 
-	//var Users = &model.Auth{
-	//	User: auth.InputName(),
-	//}
 	// 创建连接，拨号
 	conn, err := grpc.Dial("localhost:9999", opts...)
 	if err != nil {
@@ -73,11 +65,6 @@ func main() {
 	if err != nil {
 		log.Printf("创建数据流失败: [%v] ", err)
 	}
-	//user := &pb.HiRequest{Name: Users.User}
-	//err = stream.Send(user)
-
-	// 创建了一个连接管道
-	//connected := make(chan bool)
 
 	// 接收 服务端信息
 	go func() {
@@ -92,19 +79,10 @@ func main() {
 			}
 			ConsoleLog(reply.Message)
 
-			//if reply.MessageType == pb.HiReply_CONNECT_FAILED { // code=1 连接失败
-			//	cancel()
-			//	break
-			//}
-			//if reply.MessageType == pb.HiReply_CONNECT_SUCCESS { // code=0 连接成功
-			//	connected <- true
-			//}
-			// 基本都是两个if都不执行，去下一次循环,返回的是 code=2 正常消息
 		}
 	}()
 
 	go func() {
-		//<-connected
 		var (
 			line string
 			err  error

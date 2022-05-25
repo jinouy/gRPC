@@ -8,11 +8,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"sync"
 	"testing"
 )
-
-var wg sync.WaitGroup
 
 func TestService_SayHi(t *testing.T) {
 
@@ -36,9 +33,7 @@ func TestService_SayHi(t *testing.T) {
 			var opts []grpc.DialOption
 
 			opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
-
 			opts = append(opts, grpc.WithPerRPCCredentials(new(model.Auth)))
-
 			opts = append(opts, grpc.WithUnaryInterceptor(auth.Clientinerceptor))
 
 			// 创建连接，拨号
