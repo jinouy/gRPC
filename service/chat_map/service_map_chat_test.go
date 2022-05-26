@@ -335,14 +335,13 @@ func TestService_SayHi_3(t *testing.T) {
 }
 
 func TestMain(m *testing.M) {
-	go Server()
 	time.Sleep(2 * time.Second)
 	res := m.Run()
 	os.Exit(res)
 
 }
 
-func Server() {
+func init() {
 	// grpc.Creds(comm.GetCertService())
 	// 实例化grpc Server，并开启拦截器
 	ser := grpc.NewServer(grpc.Creds(comm.GetCertService()), grpc.StreamInterceptor(comm.GetServerInterceptor()))
@@ -356,9 +355,12 @@ func Server() {
 		log.Printf("Failed to listen: [%v]", err)
 		return
 	}
-	// 启动服务
-	if err := ser.Serve(address); err != nil {
-		log.Printf("Failed to start: [%v]", err)
-		return
-	}
+	go func() {
+		// 启动服务
+		if err := ser.Serve(address); err != nil {
+			log.Printf("Failed to start: [%v]", err)
+			return
+		}
+	}()
+
 }
