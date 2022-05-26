@@ -5,10 +5,10 @@ import (
 	"context"
 	"fmt"
 	"gRPC_User/client/auth"
+	"gRPC_User/comm"
 	"gRPC_User/model"
 	pb "gRPC_User/proto/chat"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 	"io"
 	"log"
 	"os"
@@ -37,17 +37,12 @@ func Input(prompt string) (string, error) {
 
 func main() {
 
-	var err error
-	var opts []grpc.DialOption
-
-	opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
-
-	opts = append(opts, grpc.WithPerRPCCredentials(new(model.Auth)))
-
-	opts = append(opts, grpc.WithUnaryInterceptor(auth.Clientinerceptor))
-
+	token := &model.Auth{
+		User: auth.User,
+	}
+	//  grpc.WithTransportCredentials(comm.GetClientCred())
 	// 创建连接，拨号
-	conn, err := grpc.Dial("localhost:9999", opts...)
+	conn, err := grpc.Dial(":9998", grpc.WithTransportCredentials(comm.GetClientCred()), grpc.WithPerRPCCredentials(token))
 	if err != nil {
 		log.Printf("连接失败: [%v] ", err)
 		return
@@ -58,11 +53,12 @@ func main() {
 	client := pb.NewOnLineChatClient(conn)
 
 	ctx, cancel := context.WithCancel(context.Background())
+	//ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs("user", token.User))
 
 	// 创建双向数据流
 	stream, err := client.SayHi(ctx)
 	if err != nil {
-		log.Printf("创建数据流失败: %v ", err)
+		log.Printf("创建数据流失败: [%v] ", err)
 		return
 	}
 
@@ -75,7 +71,7 @@ func main() {
 		for {
 			reply, err = stream.Recv()
 			if err != nil {
-				log.Printf("数据传输失败: %v", err)
+				log.Printf("数据传输失败: [%v]", err)
 				cancel()
 				return
 			}
@@ -92,7 +88,7 @@ func main() {
 		for {
 			line, err = Input("")
 			if err != nil {
-				log.Printf("数据输入失败: %v", err)
+				log.Printf("数据输入失败: [%v]", err)
 				return
 			}
 			if line == "exit" {
@@ -104,7 +100,7 @@ func main() {
 			})
 			fmt.Print("> ")
 			if err != nil {
-				log.Printf("数据传输失败: %v", err)
+				log.Printf("数据传输为空: [%v]", err)
 				return
 			}
 		}

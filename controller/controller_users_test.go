@@ -17,8 +17,8 @@ import (
 )
 
 var users = &model.Authentication{
-	User:     "admin",
-	Password: "admin",
+	UserName: "admin",
+	Password: "123456",
 }
 
 func TestProductService_GetUserByName(t *testing.T) {

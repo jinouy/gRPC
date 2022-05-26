@@ -9,43 +9,56 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func GetToke() grpc.UnaryServerInterceptor {
+//func GetClientInterceptor() grpc.StreamClientInterceptor {
+//
+//	var clientinterceptor grpc.StreamClientInterceptor
+//
+//	clientinterceptor = func(
+//		ctx context.Context,
+//		desc *grpc.StreamDesc,
+//		cc *grpc.ClientConn,
+//		method string,
+//		streamer grpc.Streamer,
+//		opts ...grpc.CallOption,
+//	) (grpc.ClientStream, error) {
+//
+//		return streamer(ctx, desc, cc, method, opts...)
+//	}
+//	return clientinterceptor
+//}
 
-	var authInterceptor grpc.UnaryServerInterceptor
-	authInterceptor = func(
-		ctx context.Context,
-		req interface{},
-		info *grpc.UnaryServerInfo,
-		handler grpc.UnaryHandler,
-	) (resp interface{}, err error) {
-		//拦截普通方法请求，验证 Token
-		err = Auth(ctx)
+func GetServerInterceptor() grpc.StreamServerInterceptor {
+	var serverinterceptor grpc.StreamServerInterceptor
+
+	serverinterceptor = func(
+		srv interface{},
+		ss grpc.ServerStream,
+		info *grpc.StreamServerInfo,
+		handler grpc.StreamHandler,
+	) error {
+		err := Auth(ss.Context())
 		if err != nil {
-			return
+			return status.Errorf(codes.Unauthenticated, err.Error())
 		}
-		// 继续处理请求
-		return handler(ctx, req)
+		return handler(srv, ss)
 	}
-	return authInterceptor
+	return serverinterceptor
 }
 
 func Auth(ctx context.Context) error {
+
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
 		return fmt.Errorf("missing credentials")
 	}
 	var user string
-	var password string
 
 	if val, ok := md["user"]; ok {
 		user = val[0]
 	}
-	if val, ok := md["password"]; ok {
-		password = val[0]
-	}
-
-	if user != "admin" || password != "admin" {
-		return status.Errorf(codes.Unauthenticated, "token不合法")
+	if user != "joy" && user != "jack" && user != "tom" {
+		return status.Errorf(codes.Unauthenticated, "token 不合法")
 	}
 	return nil
+
 }
