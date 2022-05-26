@@ -1,8 +1,6 @@
 package util
 
 import (
-	"fmt"
-	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
@@ -18,16 +16,16 @@ var (
 	err error
 )
 
-func init() {
-
-	psqlInfo := fmt.Sprintf("user=%s password=%s dbname=%s port=%d sslmode=disable TimeZone=Asia/Shanghai",
-		user, password, dbname, port)
-	Db, err = gorm.Open(postgres.New(postgres.Config{
-		DSN:                  psqlInfo,
-		PreferSimpleProtocol: true,
-	}), &gorm.Config{})
-	if err != nil {
-		panic(err.Error())
-	}
-
-}
+//func init() {
+//
+//	psqlInfo := fmt.Sprintf("user=%s password=%s dbname=%s port=%d sslmode=disable TimeZone=Asia/Shanghai",
+//		user, password, dbname, port)
+//	Db, err = gorm.Open(postgres.New(postgres.Config{
+//		DSN:                  psqlInfo,
+//		PreferSimpleProtocol: true,
+//	}), &gorm.Config{})
+//	if err != nil {
+//		panic(err.Error())
+//	}
+//
+//}

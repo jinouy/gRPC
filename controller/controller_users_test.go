@@ -192,7 +192,7 @@ func TestMain(m *testing.M) {
 
 func InitServer() {
 
-	rpcServer := grpc.NewServer(grpc.Creds(comm.GetCertService()), grpc.UnaryInterceptor(comm.GetToke()))
+	rpcServer := grpc.NewServer(grpc.Creds(comm.GetCertService()))
 
 	src := &UserService{}
 	user2.RegisterUserServiceServer(rpcServer, src)

@@ -13,15 +13,15 @@ func GetCertService() credentials.TransportCredentials {
 	// 证书认证-双向认证
 	// 从证书相关文件中读取和解析信息，得到证书公钥、密钥对
 
-	cert, err := tls.LoadX509KeyPair("cert/server.pem", "cert/server.key")
+	cert, err := tls.LoadX509KeyPair("../../cert/server.pem", "../../cert/server.key")
 	if err != nil {
-		log.Fatal("证书读取错误", err)
+		log.Fatal("证书读取错误:", err)
 	}
 	// 创建一个新的、空的 CertPool
 	certPool := x509.NewCertPool()
-	ca, err := ioutil.ReadFile("cert/ca.crt")
+	ca, err := ioutil.ReadFile("../../cert/ca.crt")
 	if err != nil {
-		log.Fatal("ca证书读取错误", err)
+		log.Fatal("ca证书读取错误:", err)
 	}
 	// 尝试解析所传入的 PEM 编码的证书。如果解析成功会将其加到 CertPool 中，便于后面的使用
 	certPool.AppendCertsFromPEM(ca)

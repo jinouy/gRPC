@@ -87,7 +87,7 @@ type Service struct {
 var connect_pool *ConnectPool
 
 func (s *Service) SayHi(stream pb.OnLineChat_SayHiServer) error {
-
+	//return errors.New("test err")
 	md, ok := metadata.FromIncomingContext(stream.Context())
 	if !ok {
 		return status.Errorf(codes.Unimplemented, "no token")
@@ -134,6 +134,7 @@ func main() {
 	// grpc.Creds(comm.GetCertService())
 	// 实例化grpc Server，并开启拦截器
 	ser := grpc.NewServer(grpc.Creds(comm.GetCertService()), grpc.StreamInterceptor(comm.GetServerInterceptor()))
+	//ser := grpc.NewServer()
 	pb.RegisterOnLineChatServer(ser, &Service{}) //必须实现protoes中定义的方法，不然这里无法通过检测
 
 	connect_pool = NewConcurMap()

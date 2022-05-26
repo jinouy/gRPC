@@ -1,7 +1,6 @@
 package model
 
 import (
-	"gRPC_User/util"
 	"time"
 )
 
@@ -23,5 +22,5 @@ type Page struct {
 }
 
 func init() {
-	util.Db.AutoMigrate(&User{})
+	//util.Db.AutoMigrate(&User{})
 }
