@@ -18,7 +18,7 @@ import (
 type ConnectPool struct {
 	Map   map[string]pb.OnLineChat_SayHiServer
 	Lock  *sync.RWMutex
-	mutex *sync.Mutex
+	mutex sync.Mutex
 }
 
 func NewConcurMap() *ConnectPool {

@@ -38,7 +38,8 @@ func GetServerInterceptor() grpc.StreamServerInterceptor {
 	) error {
 		err := Auth(ss.Context())
 		if err != nil {
-			return status.Errorf(codes.Unauthenticated, err.Error())
+			//return status.Errorf(codes.Unauthenticated, err.Error())
+			return err
 		}
 		return handler(srv, ss)
 	}
@@ -56,7 +57,8 @@ func Auth(ctx context.Context) error {
 	if val, ok := md["user"]; ok {
 		user = val[0]
 	}
-	if user != "joy" && user != "jack" && user != "tom" {
+	//if user != "joy" && user != "jack" && user != "tom" {
+	if user == "" {
 		return status.Errorf(codes.Unauthenticated, "token 不合法")
 	}
 	return nil
